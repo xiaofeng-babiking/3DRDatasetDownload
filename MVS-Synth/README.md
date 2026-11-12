@@ -22,9 +22,12 @@ MVS-Synth 是 DeepMVS（CVPR 2018）论文发布的照片级合成多视图立�
 | 1280×720 | 16 GB | <https://huggingface.co/datasets/phuang17/MVS-Synth/resolve/main/GTAV_720.tar.gz> |
 | 960×540 | 9 GB（实际 10.49 GB） | <https://huggingface.co/datasets/phuang17/MVS-Synth/resolve/main/GTAV_540.tar.gz> |
 
-也可以用 Hugging Face CLI：
+`download_mvs_synth.sh` 使用 Hugging Face CLI（`pip install -U huggingface_hub`）下载，可断点续传：
 
 ```bash
+./download_mvs_synth.sh            # 默认 1080
+./download_mvs_synth.sh -x 540 720 # 下载并解压
+# 等价于：
 hf download phuang17/MVS-Synth GTAV_1080.tar.gz --repo-type dataset --local-dir .
 ```
 
