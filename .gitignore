@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Dataset download URL JSONs (signed, per-user, expiring links)
+urls/
