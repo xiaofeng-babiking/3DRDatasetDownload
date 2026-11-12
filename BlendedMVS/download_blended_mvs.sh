@@ -14,7 +14,7 @@
 #
 # Downloads are resumable (wget -c): re-run the same command to continue.
 
-OUTPUT_ROOT=/Volumes/Expansion0/3DRDatasets/BlendedMVS
+OUTPUT_ROOT=/Volumes/Expansion1/3DRDatasets/BlendedMVS
 UNZIP=0
 while getopts "o:uh" opt; do
   case "$opt" in
