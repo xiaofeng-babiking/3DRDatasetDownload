@@ -14,11 +14,9 @@ Dynamic Replica 是 Meta AI 与牛津 VGG 在 DynamicStereo（CVPR 2023）中发
 ## 下载 (Download)
 
 1. 在 [项目网站](https://dynamic-stereo.github.io/) 的 **data** 标签页接受许可协议，下载 `links.json`（下载链接与账号相关，所以不放在本仓库中）。
-2. 运行脚本：它会把官方仓库克隆到 `OUTPUT_ROOT/_code/dynamic_stereo`，再调用官方下载器（依赖 `git`、`python3`、`requests`、`tqdm`）。
+2. 运行脚本：它会把官方仓库克隆到 `OUTPUT_ROOT/_code/dynamic_stereo`，按需安装 `requirements.txt`（官方下载器依赖的 `requests`、`tqdm`），再调用官方 Python 下载器。可用环境变量 `PYTHON` 指定解释器（默认 `python3`）。
 
 ```bash
-pip install requests tqdm
-
 # 默认：real + valid + test
 ./download_dynamic_replica.sh -l ~/Downloads/links.json
 

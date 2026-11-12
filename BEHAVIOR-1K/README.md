@@ -6,8 +6,17 @@ BEHAVIOR-1K 是斯坦福发布的具身智能仿真基准，包含 1,000 项源�
 
 ## 下载 (Download)
 
+| 文件 | 作用 |
+|---|---|
+| `download_behavior_1k.sh` | 入口脚本：解析参数，按需安装 `requirements.txt`，然后调用 Python 脚本 |
+| `download_behavior_1k.py` | 实际的下载逻辑（`huggingface_hub.snapshot_download` + OmniGibson 官方函数），也可单独运行 |
+| `requirements.txt` | Python 依赖（`huggingface_hub`）；OmniGibson 需用官方安装程序另外安装 |
+
+用环境变量 `PYTHON` 指定解释器（默认 `python3`），缺少依赖时会自动 `pip install -r requirements.txt` 到该解释器。下面几个 Hugging Face 仓库无需申请。
+
 ```bash
-pip install -U huggingface_hub   # hf CLI；下面几个 Hugging Face 仓库无需申请
+# 先看看会下载哪些文件（-n：dry run）
+./download_behavior_1k.sh -n -t 0 -m rgb -c head demos
 
 # 示范数据：任务 0~2，只要头部相机的 RGB 和深度
 ./download_behavior_1k.sh -o /path/to/BEHAVIOR-1K -t 0,1,2 -m rgb,depth -c head demos
@@ -19,8 +28,14 @@ pip install -U huggingface_hub   # hf CLI；下面几个 Hugging Face 仓库无�
 ./download_behavior_1k.sh -t 0 rawdata
 
 # 仿真器场景与物体资产（需先安装 OmniGibson，会显示数据许可并要求同意）
-./download_behavior_1k.sh assets
+PYTHON=~/miniconda3/envs/behavior/bin/python ./download_behavior_1k.sh assets
+
+# 也可以直接运行 Python 脚本
+pip install -r requirements.txt
+python download_behavior_1k.py --tasks 0 1 2 --modalities rgb depth --cameras head demos
 ```
+
+> `demos` 仓库有约 10 万个文件，开始下载前列出文件需要约 1 分钟。重新运行同一命令会跳过已下载完成的文件。
 
 | PART | 来源 | 内容 | 大小 |
 |---|---|---|---:|
@@ -38,8 +53,8 @@ BEHAVIOR 数据包包含第三方美术资产，有再分发限制，因此资�
 git clone https://github.com/StanfordVL/BEHAVIOR-1K && cd BEHAVIOR-1K
 ./setup.sh --new-env --omnigibson --bddl            # 加 --dataset 可在安装时一并下载资产
 
-# 2. 下载资产到 $OMNIGIBSON_DATA_PATH（脚本默认设为 OUTPUT_ROOT/omnigibson-data）
-./download_behavior_1k.sh assets
+# 2. 用装有 OmniGibson 的解释器下载资产到 $OMNIGIBSON_DATA_PATH（脚本默认设为 OUTPUT_ROOT/omnigibson-data）
+PYTHON=$(conda run -n behavior which python) ./download_behavior_1k.sh assets
 ```
 
 等价的官方命令：

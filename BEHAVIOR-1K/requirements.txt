@@ -1,0 +1,6 @@
+# demos / rawdata / assets_zip
+huggingface_hub>=0.23
+# The `assets` part additionally needs OmniGibson + Isaac Sim, which cannot be installed
+# with pip alone; use the official installer (see README.md):
+#   git clone https://github.com/StanfordVL/BEHAVIOR-1K && cd BEHAVIOR-1K
+#   ./setup.sh --new-env --omnigibson --bddl
