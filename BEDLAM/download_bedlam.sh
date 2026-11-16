@@ -12,7 +12,7 @@
 #        $BEDLAM_USERNAME / $BEDLAM_PASSWORD or prompted.
 #
 # Usage: ./download_bedlam.sh [-o OUTPUT_ROOT] [-s hf|mpi] [-q SEQ_GLOB] [-x] [MODALITY ...]
-#   -o OUTPUT_ROOT   default: /Volumes/Expansion0/3DRDatasets/BEDLAM
+#   -o OUTPUT_ROOT   default: /Volumes/Expansion1/3DRDatasets/BEDLAM
 #   -s SOURCE        hf (default) or mpi
 #   -q SEQ_GLOB      (hf only) restrict to sequences matching a glob, e.g. '20221010_*'
 #                    (default: all 30 sequence batches)
@@ -25,7 +25,7 @@
 #                      ground_truth  camera/body GT CSV+JSON ~0.1 GB
 #                      depth         32-bit EXR depth        ~4.09 TB (BEDLAM-depth repo)
 
-OUTPUT_ROOT=/Volumes/Expansion0/3DRDatasets/BEDLAM
+OUTPUT_ROOT=/Volumes/Expansion1/3DRDatasets/BEDLAM
 SOURCE=hf
 SEQ='*'
 EXTRACT=0
