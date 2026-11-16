@@ -14,19 +14,19 @@ Dynamic Replica 是 Meta AI 与牛津 VGG 在 DynamicStereo（CVPR 2023）中发
 ## 下载 (Download)
 
 1. 在 [项目网站](https://dynamic-stereo.github.io/) 的 **data** 标签页接受许可协议，下载 `links.json`（下载链接与账号相关，所以不放在本仓库中）。
-2. 运行脚本：它会把官方仓库克隆到 `OUTPUT_ROOT/_code/dynamic_stereo`，按需安装 `requirements.txt`（官方下载器依赖的 `requests`、`tqdm`），再调用官方 Python 下载器。可用环境变量 `PYTHON` 指定解释器（默认 `python3`）。
+2. 运行脚本：它会把官方仓库克隆到 `OUTPUT_ROOT/_code/dynamic_stereo`，按需安装 `requirements.txt`（官方下载器依赖的 `requests`、`tqdm`），再调用官方 Python 下载函数，**仅下载并保留压缩包，不解压**。可用环境变量 `PYTHON` 指定解释器（默认 `python3`）。
 
 ```bash
 # 默认：real + valid + test
 ./download_dynamic_replica.sh -l ~/Downloads/links.json
 
-# 全部划分，解压后删除压缩包，8 个并行线程
-./download_dynamic_replica.sh -l ~/Downloads/links.json -o /path/to/DynamicReplica -c -w 8 real valid test train
+# 全部划分，仅下载，8 个并行线程
+./download_dynamic_replica.sh -l ~/Downloads/links.json -o /path/to/DynamicReplica -w 8 real valid test train
 ```
 
-官方下载器会校验 SHA256（`scripts/dr_sha256.json`），并跳过已下载的压缩包，中断后重新运行同一命令即可继续。
+脚本会校验 SHA256（`scripts/dr_sha256.json`），并跳过已下载的压缩包，中断后重新运行同一命令即可继续（未完成的单个压缩包会重新下载）。压缩包保存在 `OUTPUT_ROOT/dynamic_replica_data/`，默认 `OUTPUT_ROOT` 为 `/Volumes/Expansion1/3DRDatasets/DynamicReplica`。
 
-等价的官方命令：
+如需下载后自动解压，可另行使用以下官方命令（本仓库的 shell 脚本不会解压）：
 
 ```bash
 git clone https://github.com/facebookresearch/dynamic_stereo
@@ -37,6 +37,8 @@ python ./scripts/download_dynamic_replica.py --link_list_file links.json \
 ```
 
 ## 数据结构 (Dataset Overview)
+
+以下是手动解压后的目录结构：
 
 ```
 dynamic_replica_data/

@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-# Download Dynamic Replica (DynamicStereo, CVPR 2023) with the official downloader — see README.md.
+# Download Dynamic Replica archives without unpacking, using official download helpers — see README.md.
 #
 # Prerequisite: accept the license on the "data" tab of https://dynamic-stereo.github.io/
 # and download links.json (the download URLs are personalised/expiring, so they are not
 # stored in this repository).
 #
-# Usage: ./download_dynamic_replica.sh -l LINKS_JSON [-o OUTPUT_ROOT] [-c] [-w N] [SPLIT ...]
+# Usage: ./download_dynamic_replica.sh -l LINKS_JSON [-o OUTPUT_ROOT] [-w N] [SPLIT ...]
 #   -l LINKS_JSON    path to links.json from the project website (required)
-#   -o OUTPUT_ROOT   default: /Volumes/Expansion0/3DRDatasets/DynamicReplica
-#   -c               delete archives after unpacking (--clear_archives_after_unpacking)
-#   -w N             parallel download / extract workers (default: 4)
+#   -o OUTPUT_ROOT   default: /Volumes/Expansion1/3DRDatasets/DynamicReplica
+#   -w N             parallel download workers (default: 4)
 #   SPLIT            any of: real valid test train (default: real valid test)
 #                    unpacked sizes: train 1.8 TB, test 328 GB, valid 106 GB, real 152 MB
 #
@@ -17,22 +16,20 @@
 #   PYTHON   interpreter to use (default: python3). Missing packages from requirements.txt
 #            (requests, tqdm) are installed into it automatically.
 #
-# The official downloader verifies SHA256 checksums and skips archives that already exist,
-# so re-running the same command resumes an interrupted download.
+# Downloads are SHA256-checked; existing archives are skipped. Re-running continues
+# unfinished downloads (partial archives restart). Archives are kept without unpacking.
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 PYTHON=${PYTHON:-python3}
 LINKS=""
-OUTPUT_ROOT=/Volumes/Expansion0/3DRDatasets/DynamicReplica
-CLEAR=0
+OUTPUT_ROOT=/Volumes/Expansion1/3DRDatasets/DynamicReplica
 WORKERS=4
-while getopts "l:o:cw:h" opt; do
+while getopts "l:o:w:h" opt; do
   case "$opt" in
     l) LINKS="$OPTARG" ;;
     o) OUTPUT_ROOT="$OPTARG" ;;
-    c) CLEAR=1 ;;
     w) WORKERS="$OPTARG" ;;
-    *) sed -n '2,21p' "$0"; exit 1 ;;
+    *) sed -n '2,20p' "$0"; exit 1 ;;
   esac
 done
 shift $((OPTIND - 1))
@@ -61,14 +58,41 @@ if ! "$PYTHON" -c "import requests, tqdm" 2>/dev/null; then
   "$PYTHON" -m pip install -r "$SCRIPT_DIR/requirements.txt" || exit 1
 fi
 
-EXTRA=()
-[ "$CLEAR" -eq 1 ] && EXTRA+=(--clear_archives_after_unpacking)
-
-echo "Output: $(pwd)/dynamic_replica_data | splits: ${SPLITS[*]} | workers: $WORKERS"
+echo "Output: $(pwd)/dynamic_replica_data | splits: ${SPLITS[*]} | workers: $WORKERS | download only (no unpacking)"
+# The official CLI always unpacks. Call only its download helper, retaining checksum
+# validation and skipping completed archives. Threads avoid spawning Python from stdin.
 PYTHONPATH="$CODE_DIR:$CODE_DIR/dynamic_stereo${PYTHONPATH:+:$PYTHONPATH}" \
-  "$PYTHON" "$CODE_DIR/dynamic_stereo/scripts/download_dynamic_replica.py" \
-    --link_list_file "$LINKS" \
-    --download_folder "$OUTPUT_ROOT/dynamic_replica_data" \
-    --download_splits "${SPLITS[@]}" \
-    --n_download_workers "$WORKERS" --n_extract_workers "$WORKERS" \
-    "${EXTRA[@]}"
+  "$PYTHON" - "$LINKS" "$OUTPUT_ROOT/dynamic_replica_data" "$WORKERS" "${SPLITS[@]}" <<'PY'
+import json
+import os
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+
+from tqdm import tqdm
+from dynamic_stereo.scripts import download_utils
+
+links_file, download_folder, workers, *splits = sys.argv[1:]
+with open(links_file) as f:
+    links = json.load(f)
+data_links = [
+    (split, os.path.split(url)[-1], url)
+    for split, urls in links.items()
+    if split in splits
+    for url in urls
+]
+os.makedirs(download_folder, exist_ok=True)
+download = partial(
+    download_utils._download_split_file,
+    download_folder,
+    checksum_check=True,
+    sha256s_file=os.path.join(os.path.dirname(download_utils.__file__), "dr_sha256.json"),
+    skip_downloaded_files=True,
+)
+with ThreadPoolExecutor(max_workers=int(workers)) as pool:
+    results = list(tqdm(pool.map(lambda link: download(link=link), data_links), total=len(data_links)))
+failed = [name for name, ok in results if not ok]
+if failed:
+    sys.exit("Download/checksum failed: " + ", ".join(failed))
+print("Done. Archives retained without unpacking.")
+PY
