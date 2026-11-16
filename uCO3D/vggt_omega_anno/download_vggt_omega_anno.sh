@@ -3,14 +3,14 @@
 # with the hf CLI (pip install -U huggingface_hub; no login needed) — see README.md.
 #
 # Usage: ./download_vggt_omega_anno.sh [-o OUTPUT_ROOT] [-x] [SHARD_PATTERN ...]
-#   -o OUTPUT_ROOT   default: /Volumes/Expansion0/3DRDatasets/uCO3D
+#   -o OUTPUT_ROOT   default: /Volumes/Expansion0/3DRDatasets/uco3d_reannotate
 #   -x               extract each shard after downloading (into OUTPUT_ROOT/vggt_omega_anno/)
 #   SHARD_PATTERN    optional glob(s) on shard names to download a subset, e.g. '0*' '1a*'
 #                    (default: all shards)
 #
 # Downloads are resumable: re-run the same command; finished files are skipped.
 
-OUTPUT_ROOT=/Volumes/Expansion0/3DRDatasets/uCO3D
+OUTPUT_ROOT=/Volumes/Expansion0/3DRDatasets/uco3d_reannotate
 EXTRACT=0
 while getopts "o:xh" opt; do
   case "$opt" in

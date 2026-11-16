@@ -18,7 +18,7 @@ uCO3D（UnCommon Objects in 3D，[论文](https://huggingface.co/papers/2501.075
 `download_vggt_omega_anno.sh` 使用 Hugging Face CLI（`pip install -U huggingface_hub`）一次性下载整个目录：
 
 ```bash
-# 默认：下载全部分片到 /Volumes/Expansion0/3DRDatasets/uCO3D/vggt_omega_anno/
+# 默认：下载全部分片到 /Volumes/Expansion0/3DRDatasets/uco3d_reannotate/vggt_omega_anno/
 ./download_vggt_omega_anno.sh
 
 # 指定输出目录，并在下载后解压
@@ -29,6 +29,16 @@ uCO3D（UnCommon Objects in 3D，[论文](https://huggingface.co/papers/2501.075
 
 # 等价于：
 hf download facebook/uco3d --repo-type dataset --include "vggt_omega_anno/*.tar" --local-dir .
+```
+
+`download_vggt_omega_anno_per_file.sh` 提供逐文件版本：按官方目录在 2026-11-16 的文件列表，显式列出 228 行 `hf download` 命令，每行只下载一个 `.tar` 文件，顺序执行，仅下载、不解压。任一命令失败即停止，重新运行即可续传。
+
+```bash
+# 默认输出：/Volumes/Expansion0/3DRDatasets/uco3d_reannotate/vggt_omega_anno/
+./download_vggt_omega_anno_per_file.sh
+
+# 指定输出目录
+./download_vggt_omega_anno_per_file.sh -o /path/to/uco3d_reannotate
 ```
 
 **断点续传**：用 `--local-dir` 下载时，`hf download` 会在 `<local-dir>/.cache/huggingface/` 记录每个文件的元数据；重新运行同一命令会**跳过已完整下载的文件**，没下完的文件则接着下。中断后直接重跑脚本即可（不要删掉 `.cache/huggingface/` 目录）。`-x` 解压时会为每个分片写一个 `.<name>.tar.extracted` 标记，重跑时跳过已解压的分片。
