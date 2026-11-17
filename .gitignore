@@ -221,4 +221,7 @@ __marimo__/
 
 # Dataset download URL JSONs (signed, per-user, expiring links)
 urls/
-DynamicReplica/links.json
+DynamicReplica/links*.json
+
+# Default destination of download_dataset.sh (dataset payloads, not source code)
+/data/

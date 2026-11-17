@@ -1,6 +1,19 @@
 # 3DRDatasetDownload
 3D Reconstruction Dataset Download Scripts
 
+## 下载脚本
+
+论文清单中的 **30 个数据集**已提供下载入口，包含需要授权文件清单的入口。完整范围、账号要求、模态选择和运行示例见 [DOWNLOADS.md](DOWNLOADS.md)。统一入口默认只下载、不解压：
+
+```bash
+bash download_dataset.sh --list
+bash download_dataset.sh co3dv2 --help
+bash download_dataset.sh co3dv2 --target_dir /path/to/Co3Dv2
+bash download_dataset.sh sailvos3d --target_dir /path/to/SAIL-VOS-3D -- --n_workers 4
+```
+
+新增脚本的使用说明位于各数据集目录。ScanNet++、Mapillary Metropolis 和 MPSD 需要先从官方获得有效下载链接，再传入 URL/TSV 清单；它们当前不自动枚举受限门户的全量文件。
+
 本仓库整理三维重建领域（涵盖多视图立体匹配 MVS、稠密 SLAM、室内几何重建及新视角合成 NVS 等）常用数据集的官网、核心参数与下载脚本。数据集按来源分为**合成数据集**与**真实场景数据集**两类；由真实扫描/真实图像重建网格后再重投影渲染的数据集（如 BlendedMVS、Replica、HM3D）归入真实场景数据集，并标注为“半合成”。
 
 > 说明：“—”表示无固定值或暂未整理；带“约”的数字为近似值，具体以各数据集官网/论文为准。
