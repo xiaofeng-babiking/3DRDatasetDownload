@@ -25,6 +25,11 @@
 #                      ground_truth  camera/body GT CSV+JSON ~0.1 GB
 #                      depth         32-bit EXR depth        ~4.09 TB (BEDLAM-depth repo)
 
+if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
+  sed -n '2,/^$/p' "$0"
+  exit 0
+fi
+
 OUTPUT_ROOT=/Volumes/Expansion1/3DRDatasets/BEDLAM
 SOURCE=hf
 SEQ='*'
