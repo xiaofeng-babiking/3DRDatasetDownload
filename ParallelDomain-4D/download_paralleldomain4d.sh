@@ -17,6 +17,11 @@
 # The Kubric-4D train set (6.5 TB, 18 parts) uses the official script
 # gcd_kubric4d_train_dl.sh from the project page.
 
+if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
+  sed -n '2,/^$/p' "$0"
+  exit 0
+fi
+
 OUTPUT_ROOT=/Volumes/Expansion0/3DRDatasets/ParallelDomain-4D
 EXTRACT=0
 while getopts "o:xh" opt; do
