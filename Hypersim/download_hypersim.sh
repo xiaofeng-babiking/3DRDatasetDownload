@@ -12,6 +12,11 @@
 #
 # Downloads are resumable (wget -c): re-run the same command to continue.
 
+if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
+  sed -n '2,/^$/p' "$0"
+  exit 0
+fi
+
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 URL_LIST="$SCRIPT_DIR/hypersim_urls.txt"
 
