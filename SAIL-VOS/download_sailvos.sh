@@ -1,5 +1,14 @@
 #!/bin/sh
 
+case "${1:-}" in
+  -h|--help)
+    echo 'Usage: sh download_sailvos.sh (downloads into the current directory)'
+    echo 'Downloads train/val archives and annotations without extracting them.'
+    exit 0 ;;
+  '') ;;
+  *) echo 'This script takes no arguments. Change to your download directory first.' >&2; exit 1 ;;
+esac
+
 # Skip files that are already complete; resume partial ones.
 # A file is written to <name>.part first and renamed only after wget succeeds,
 # so an existing <name> means it finished downloading.
