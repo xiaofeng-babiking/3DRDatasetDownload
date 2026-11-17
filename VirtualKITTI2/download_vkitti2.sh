@@ -18,6 +18,11 @@
 #
 # Downloads are resumable (wget -c): re-run the same command to continue.
 
+if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
+  sed -n '2,/^$/p' "$0"
+  exit 0
+fi
+
 OUTPUT_ROOT=/Volumes/Expansion0/3DRDatasets/VirtualKITTI2
 EXTRACT=0
 CHECK=0
