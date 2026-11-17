@@ -11,6 +11,11 @@
 #
 # Re-running the same command resumes partial downloads (wget -c) and skips finished ones.
 
+if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
+  sed -n '2,/^$/p' "$0"
+  exit 0
+fi
+
 CONFIG=""
 OUTPUT_ROOT=/Volumes/Expansion0/3DRDatasets/Mid-Air
 EXTRACT=0
