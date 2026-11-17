@@ -19,6 +19,11 @@
 # Downloads are SHA256-checked; existing archives are skipped. Re-running continues
 # unfinished downloads (partial archives restart). Archives are kept without unpacking.
 
+if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
+  sed -n '2,/^$/p' "$0"
+  exit 0
+fi
+
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 PYTHON=${PYTHON:-python3}
 LINKS=""
@@ -44,6 +49,7 @@ for s in "${SPLITS[@]}"; do
 done
 
 mkdir -p "$OUTPUT_ROOT" || exit 1
+OUTPUT_ROOT=$(cd "$OUTPUT_ROOT" && pwd)
 cd "$OUTPUT_ROOT" || exit 1
 
 # The official script imports itself as `dynamic_stereo.scripts.download_utils`,
