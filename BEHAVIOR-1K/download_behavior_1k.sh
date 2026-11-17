@@ -21,6 +21,11 @@
 # Missing packages from requirements.txt are installed into that interpreter automatically.
 # Re-running the same command resumes (completed files are skipped).
 
+if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
+  sed -n '2,/^$/p' "$0"
+  exit 0
+fi
+
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 PYTHON=${PYTHON:-python3}
 
