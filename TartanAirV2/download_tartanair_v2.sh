@@ -14,6 +14,10 @@
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 PYTHON=${PYTHON:-python3}
 
+if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
+  exec "$PYTHON" "$SCRIPT_DIR/download_tartanair_v2.py" --help
+fi
+
 OUTPUT_ROOT=/Volumes/Expansion0/3DRDatasets/TartanAirV2
 if [ "${1:-}" = "-o" ]; then OUTPUT_ROOT="$2"; shift 2; fi
 
