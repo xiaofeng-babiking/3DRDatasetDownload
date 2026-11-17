@@ -82,6 +82,20 @@ python download_aria_script.py --url_json urls/AEO_download_urls.json --output_d
 - **日志**：每 10 秒打印一行 `[speed]`（当前速度、平均速度、进度、剩余时间），每个文件完成时打印大小与速度，结束时打印汇总；链接过期（HTTP 403）会给出提示。
 - 仅依赖 Python 标准库。
 
+### 4. 统一 Bash 入口（只下载）
+
+新增 `download_aria.sh`，保留原 `download_aria_all.sh` 的配置与行为。默认选择 AEA；使用 `--dataset` 选择 ADT、AEO、ASE、ASE mesh/ATEK、ADT ATEK、Gen2 Pilot、Nymeria、DTC、Reading 或 HOT3D。
+
+```bash
+bash Aria/download_aria.sh --dataset aea --url_json /path/AriaEverydayActivities_download_urls.json --target_dir /data/Aria/aea
+bash Aria/download_aria.sh --dataset adt --target_dir /data/Aria/adt --n_workers 8
+bash Aria/download_aria.sh --dataset ase-atek --config efm_eval --max_sequences 1 --list
+```
+
+默认读取本目录 `urls/` 下对应的 JSON（文件名见 `--help` 或上表），缺少文件时明确报错。默认输出 `./data/Aria/<dataset>`，相对于调用者当前目录。`--sequence '序列通配符'` 可重复，`--max_sequences N` 限制序列数；`--config NAME` 选择 ATEK 配置。`--list` 只列选中的文件名，不输出签名 URL，不下载数据。依赖 Python 3 标准库，复用现有校验/续传/速度显示逻辑。
+
+访问流程依据 [AEA 官方下载说明](https://facebookresearch.github.io/projectaria_tools/docs/open_datasets/aria_everyday_activities_dataset/aea_download_dataset)；ATEK 配置依据 [EFM3D 官方数据说明](https://github.com/facebookresearch/efm3d/blob/main/data/README.md)。核对日期：2026-11-17。
+
 ## 工具与模型 (Tools & Models)
 
 | # | 名称 | 简介 | 链接 |
