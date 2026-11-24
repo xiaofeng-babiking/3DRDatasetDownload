@@ -8,11 +8,11 @@ BEHAVIOR-1K 是斯坦福发布的具身智能仿真基准，包含 1,000 项源�
 
 | 文件 | 作用 |
 |---|---|
-| `download_behavior_1k.sh` | 入口脚本：解析参数，按需安装 `requirements.txt`，然后调用 Python 脚本 |
-| `download_behavior_1k.py` | 实际的下载逻辑（`huggingface_hub.snapshot_download` + OmniGibson 官方函数），也可单独运行 |
+| `download_behavior_1k.sh` | 用 `hf download` 下载示范数据、原始 HDF5 或资产 ZIP 压缩包 |
+| `download_behavior_1k.py` | 独立 Python 入口，可通过 `huggingface_hub.snapshot_download` 下载数据，或通过 OmniGibson 官方函数安装资产 |
 | `requirements.txt` | Python 依赖（`huggingface_hub`）；OmniGibson 需用官方安装程序另外安装 |
 
-用环境变量 `PYTHON` 指定解释器（默认 `python3`），缺少依赖时会自动 `pip install -r requirements.txt` 到该解释器。下面几个 Hugging Face 仓库无需申请。
+运行 shell 脚本下载 Hugging Face 数据前，请确认终端可以执行 `hf download --help`。如需安装或更新 CLI，可运行 `python3 -m pip install -U huggingface_hub`。下面几个 Hugging Face 仓库无需申请。
 
 ```bash
 # 先看看会下载哪些文件（-n：dry run）
@@ -27,34 +27,33 @@ BEHAVIOR-1K 是斯坦福发布的具身智能仿真基准，包含 1,000 项源�
 # 原始 HDF5 示范（约 793 GB）
 ./download_behavior_1k.sh -t 0 rawdata
 
-# 仿真器场景与物体资产（需先安装 OmniGibson，会显示数据许可并要求同意）
-PYTHON=~/miniconda3/envs/behavior/bin/python ./download_behavior_1k.sh assets
+# 下载 4 个资产 ZIP 到输出目录下的 zipped-datasets/，保留压缩格式
+./download_behavior_1k.sh assets
 
 # 也可以直接运行 Python 脚本
 pip install -r requirements.txt
-python download_behavior_1k.py --tasks 0 1 2 --modalities rgb depth --cameras head demos
+python download_behavior_1k.py demos --tasks 0 1 2 --modalities rgb depth --cameras head
 ```
 
 > `demos` 仓库有约 10 万个文件，开始下载前列出文件需要约 1 分钟。重新运行同一命令会跳过已下载完成的文件。
 
-| PART | 来源 | 内容 | 大小 |
+| Shell 脚本的 PART | 来源 | 内容 | 大小 |
 |---|---|---|---:|
 | `demos` | [behavior-1k/2025-challenge-demos](https://huggingface.co/datasets/behavior-1k/2025-challenge-demos) | LeRobot v2.1 格式：10,000 条示范、50 个任务、约 1.19 亿帧（30 fps），R1Pro 机器人头部（720×720）与左右手腕（480×480）相机的 RGB / 深度 / 实例分割视频，及状态、动作、相机相对位姿、标注 | ~1.57 TB |
 | `rawdata` | [behavior-1k/2025-challenge-rawdata](https://huggingface.co/datasets/behavior-1k/2025-challenge-rawdata) | 同一批示范的原始 HDF5（`task-XXXX/episode_XXXXXXXX.hdf5`） | ~793 GB |
-| `assets` | 官方安装函数 | OmniGibson 机器人资产、BEHAVIOR-1K 场景与物体资产（加密）、解密密钥、2026 Challenge 任务实例 | ~32 GB |
-| `assets_zip` | [behavior-1k/zipped-datasets](https://huggingface.co/datasets/behavior-1k/zipped-datasets) | 只下载上述资产压缩包（`behavior-1k-assets-3.9.0.zip` 31.5 GB 等），不安装 | ~32 GB |
+| `assets` 或 `assets_zip` | [behavior-1k/zipped-datasets](https://huggingface.co/datasets/behavior-1k/zipped-datasets) | 4 个 ZIP 文件，包含 BEHAVIOR-1K 场景与物体、OmniGibson 机器人资产、2025 和 2026 Challenge 任务实例 | ~32 GB |
 
-### 关于仿真器资产（`assets`）
+### 可选的仿真器资产安装（独立 Python 脚本）
 
-BEHAVIOR 数据包包含第三方美术资产，有再分发限制，因此资产是**加密**的，解密密钥只能由官方安装程序在你同意 BEHAVIOR Data Bundle 许可后下载。本仓库的脚本不绕过这一步，而是直接调用 OmniGibson 自带的函数：
+BEHAVIOR 数据包包含第三方美术资产，有再分发限制，因此资产是**加密**的。需要在仿真器中使用这些资产时，可通过独立 Python 脚本调用 OmniGibson 官方安装程序，并在同意 BEHAVIOR Data Bundle 许可后获取密钥。
 
 ```bash
 # 1. 安装 OmniGibson（需要 Linux/Windows + NVIDIA GPU，Isaac Sim 不支持 macOS）
-git clone https://github.com/StanfordVL/BEHAVIOR-1K && cd BEHAVIOR-1K
-./setup.sh --new-env --omnigibson --bddl            # 加 --dataset 可在安装时一并下载资产
+git clone https://github.com/StanfordVL/BEHAVIOR-1K
+(cd BEHAVIOR-1K && ./setup.sh --new-env --omnigibson --bddl)
 
 # 2. 用装有 OmniGibson 的解释器下载资产到 $OMNIGIBSON_DATA_PATH（脚本默认设为 OUTPUT_ROOT/omnigibson-data）
-PYTHON=$(conda run -n behavior which python) ./download_behavior_1k.sh assets
+conda run --no-capture-output -n behavior python download_behavior_1k.py assets
 ```
 
 等价的官方命令：
@@ -89,7 +88,7 @@ python -c "from omnigibson.utils.asset_utils import download_2026_challenge_task
 
 视频均为 libx265 编码；深度和实例分割也被编码成视频，解码方式请参考 BEHAVIOR Challenge 的 [文档](https://behavior.stanford.edu/challenge/)。
 
-`assets` 安装后位于 `$OMNIGIBSON_DATA_PATH/`：`omnigibson-robot-assets/`、`behavior-1k-assets/`（场景与物体）、`2026-challenge-task-instances/`、`omnigibson.key`。
+通过独立 Python 脚本安装的资产位于 `$OMNIGIBSON_DATA_PATH/`：`omnigibson-robot-assets/`、`behavior-1k-assets/`（场景与物体）、`2026-challenge-task-instances/`、`omnigibson.key`。
 
 ## 许可 (License)
 
