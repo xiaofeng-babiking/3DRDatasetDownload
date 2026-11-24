@@ -3,22 +3,55 @@
 set -euo pipefail
 usage() {
   cat <<'EOF'
-Usage: download_mpsd.sh [--target_dir DIR] --manifest FILE.tsv
+Usage: download_mpsd.sh [--target_dir DIR] [--manifest FILE]
        download_mpsd.sh [--target_dir DIR] --url URL --filename NAME
 Download-only entry point for Mapillary Planet-Scale Depth (MPSD).
 Default output: ./data/MPSD
---manifest FILE.tsv  Local list: relative/output/path<TAB>authorized HTTP(S) URL.
-                     Blank lines and # comments are allowed.
+--manifest FILE      Defaults to download_links.txt beside this script.
+                     Use one authorized HTTP(S) URL per line. Each file is saved
+                     under its URL basename, without the query string or fragment.
+                     To choose names, use relative/output/path<TAB>URL on each line.
+                     Blank lines and # comments are allowed in both formats.
 --url URL            One direct download URL obtained from the official portal.
 --filename NAME      Relative output path for --url (required with --url).
 -h, --help           Show help.
-First obtain authorized download links from:
-https://www.mapillary.com/dataset/depth
-No built-in public links are available here. Portal/login pages are not data URLs.
-The script does not register, accept terms, retrieve credentials, or extract files.
+Per-file transfer progress is displayed. Re-run with the same target directory
+to resume .part files and skip completed files.
 EOF
 }
 die() { printf 'Error: %s\n' "$*" >&2; exit 2; }
+
+download_list() {
+  local list="$1" dir="$2" line name i count=0 failed=0
+  local -a urls names
+  [[ -f "$list" && -r "$list" ]] || die "cannot read manifest: $list"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line=${line%$'\r'}
+    case "$line" in ''|'#'*) continue ;; esac
+    if (( count == 0 )) && [[ "$line" == *$'\t'* ]]; then
+      download_manifest "$list" "$dir"
+      return
+    fi
+    [[ "$line" =~ ^https?://[^/?#[:space:]]+/[^[:space:]]+$ ]] ||
+      die "expected one HTTP(S) file URL per line in $list"
+    name=${line%%[?#]*}
+    name=${name##*/}
+    case "$name" in ''|.|..) die "URL has no usable filename in $list" ;; esac
+    for ((i=0; i<count; i++)); do
+      [[ "${names[i]}" != "$name" ]] || die "duplicate filename $name; use a TSV with distinct output paths"
+    done
+    urls[count]="$line"
+    names[count]="$name"
+    count=$((count + 1))
+  done < "$list"
+  (( count > 0 )) || die "manifest contains no downloadable files: $list"
+  for ((i=0; i<count; i++)); do
+    printf '[%d/%d] ' "$((i + 1))" "$count"
+    download_file "${urls[i]}" "$dir/${names[i]}" || failed=1
+  done
+  return "$failed"
+}
+
 target_dir="./data/MPSD"
 manifest=""
 url=""
@@ -38,17 +71,16 @@ while [[ $# -gt 0 ]]; do
 done
 if [[ -n "$manifest" ]]; then
   [[ -z "$url" && -z "$filename" ]] || die "--manifest cannot be combined with --url/--filename"
-  [[ -f "$manifest" ]] || die "manifest not found: $manifest"
-else
-  [[ -n "$url" && -n "$filename" ]] || { usage >&2; die "provide --manifest or both --url and --filename after obtaining official access"; }
+elif [[ -n "$url" || -n "$filename" ]]; then
+  [[ -n "$url" && -n "$filename" ]] || die "provide both --url and --filename"
   case "$url" in http://*|https://*) ;; *) die "--url must be HTTP(S)";; esac
   case "/$filename/" in *"/../"*|*"/./"*|*"//"*) die "--filename must be a relative file path";; esac
   [[ "$filename" != *$'\t'* && "$filename" != *$'\n'* ]] || die "invalid filename"
 fi
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/../scripts/download_common.sh"
-if [[ -n "$manifest" ]]; then
-  download_manifest "$manifest" "$target_dir"
-else
+if [[ -n "$url" ]]; then
   download_file "$url" "$target_dir/$filename"
+else
+  download_list "${manifest:-$script_dir/download_links.txt}" "$target_dir"
 fi
