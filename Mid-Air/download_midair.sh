@@ -17,7 +17,7 @@ fi
 set -eu
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 CONFIG="$SCRIPT_DIR/download_config.txt"
-OUTPUT_ROOT=/Volumes/Expansion0/3DRDatasets/Mid-Air
+OUTPUT_ROOT=/Volumes/Expansion1/3DRDatasets/Mid-Air
 EXTRACT=0
 DELETE=0
 while getopts "c:o:xdh" opt; do
