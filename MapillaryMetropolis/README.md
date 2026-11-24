@@ -2,9 +2,10 @@
 
 [官方入口](https://www.mapillary.com/dataset/metropolis)。2026-11-17 核验时，未登录页面要求先登录，未能取得可公开枚举的官方文件清单。因此这里提供**授权链接下载脚本**，不声称无需登录即可一键下载全量数据。
 
-先登录官方页面，按其要求取得访问权限，复制真实的文件下载 URL（如带时效签名的直链）。然后手动建立本地 TSV 清单：每行是 `相对保存路径<Tab>HTTP(S)下载URL`，没有表头；Tab 是真实制表符，不是两个字符 `\\t`。允许空行和 `#` 注释。
+脚本默认读取同目录的 `download_links.txt`，每行一个授权下载 URL。归档保存在当前工作目录的 `./data/MapillaryMetropolis/` 下，文件名取自 URL 路径。要自定义文件名或子目录，可用 `--manifest` 指定 TSV，每行用一个制表符分隔相对保存路径和下载 URL。两种清单都允许空行和 `#` 注释。
 
 ```bash
+bash MapillaryMetropolis/download_mapillary_metropolis.sh
 bash MapillaryMetropolis/download_mapillary_metropolis.sh --target_dir /path/to/MapillaryMetropolis --manifest /path/to/files.tsv
 # 下载单个授权文件；先将 AUTHORIZED_URL 设置为官方给出的真实直链
 bash MapillaryMetropolis/download_mapillary_metropolis.sh --target_dir /path/to/MapillaryMetropolis \
