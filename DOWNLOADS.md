@@ -55,7 +55,7 @@ bash download_dataset.sh dl3dv --target_dir /data/DL3DV -- --subset 1K --resolut
 | 26 | Taskonomy / `taskonomy` | [download_taskonomy.sh](Taskonomy/download_taskonomy.sh) | 官网推荐的 Omnidata Taskonomy 组件；默认 fullplus/all，需 `omnidata-tools`、`aria2c`。 |
 | 27 | UnrealStereo4K / `unrealstereo4k` | [download_unrealstereo4k.sh](UnrealStereo4K/download_unrealstereo4k.sh) | 默认完整 4K 的 0–8 场景；`-q` 为低分辨率版本。 |
 | 28 | Virtual KITTI / `virtualkitti` | [download_vkitti.sh](VirtualKITTI/download_vkitti.sh) | 默认原版 v1.3.1 全部六个模态包；v2.0.3 另用 [`virtualkitti2`](VirtualKITTI2/download_vkitti2.sh)，其全部模态使用 `-- all`。 |
-| 29 | Waymo / `waymo` | [download_waymo.sh](Waymo/download_waymo.sh) | 默认 Perception 2.0.1；另支持 Perception 1.4.3/Motion 1.3.1/E2E 1.0.0；需官方授权及 `gcloud auth login`。 |
+| 29 | Waymo / `waymo` | [download_waymo.sh](Waymo/download_waymo.sh) | 默认依次下载 E2E 1.0.0、Motion 1.3.1、Perception 2.0.1；可重复 `--release` 选择版本，旧版 Perception 1.4.3 需显式选择；需官方授权及 `gcloud auth login`。 |
 | 30 | WildRGBD / `wildrgbd` | [download_wildrgbd.sh](WildRGBD/download_wildrgbd.sh) | 官方 46 类、93 个 ZIP/分卷，支持类别筛选，不合并分卷。 |
 
 ## 授权数据的运行示例
