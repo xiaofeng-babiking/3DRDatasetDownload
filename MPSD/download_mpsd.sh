@@ -52,7 +52,7 @@ download_list() {
   return "$failed"
 }
 
-target_dir="./data/MPSD"
+target_dir="/Volumes/Expansion1/3DRDatasets/MPSD"
 manifest=""
 url=""
 filename=""
