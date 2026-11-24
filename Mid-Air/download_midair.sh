@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# Download Mid-Air from a download_config.txt generated on https://midair.ulg.ac.be/download.html
-# (see README.md). The site only hands out archive links through its download form, so this
-# script needs that link list; it then runs the official wget + unzip commands with resume.
+# Download Mid-Air archives listed by https://midair.ulg.ac.be/download.html
 #
-# Usage: ./download_midair.sh -c DOWNLOAD_CONFIG [-o OUTPUT_ROOT] [-x] [-d]
-#   -c DOWNLOAD_CONFIG   text file with one archive URL per line (from the download form)
+# Usage: ./download_midair.sh [-c DOWNLOAD_CONFIG] [-o OUTPUT_ROOT] [-x] [-d]
+#   -c DOWNLOAD_CONFIG   one URL per line (default: download_config.txt beside this script)
 #   -o OUTPUT_ROOT       default: /Volumes/Expansion0/3DRDatasets/Mid-Air
 #   -x                   unzip every downloaded archive in place (official extraction command)
 #   -d                   delete each zip after a successful unzip (implies -x)
 #
-# Re-running the same command resumes partial downloads (wget -c) and skips finished ones.
+# Re-run the same command to resume interrupted downloads with wget -c.
 
 if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
   sed -n '2,/^$/p' "$0"
   exit 0
 fi
 
-CONFIG=""
+set -eu
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+CONFIG="$SCRIPT_DIR/download_config.txt"
 OUTPUT_ROOT=/Volumes/Expansion0/3DRDatasets/Mid-Air
 EXTRACT=0
 DELETE=0
@@ -26,38 +26,61 @@ while getopts "c:o:xdh" opt; do
     o) OUTPUT_ROOT="$OPTARG" ;;
     x) EXTRACT=1 ;;
     d) EXTRACT=1; DELETE=1 ;;
-    *) sed -n '2,13p' "$0"; exit 1 ;;
+    h) sed -n '2,/^$/p' "$0"; exit 0 ;;
+    *) sed -n '2,/^$/p' "$0" >&2; exit 1 ;;
   esac
 done
 
-[ -n "$CONFIG" ] || { echo "Missing -c DOWNLOAD_CONFIG (generate it at https://midair.ulg.ac.be/download.html)" >&2; exit 1; }
-[ -f "$CONFIG" ] || { echo "Config not found: $CONFIG" >&2; exit 1; }
-CONFIG=$(cd "$(dirname "$CONFIG")" && pwd)/$(basename "$CONFIG")
-
-mkdir -p "$OUTPUT_ROOT" || exit 1
-cd "$OUTPUT_ROOT" || exit 1
-echo "Output: $(pwd) | links: $(grep -c . "$CONFIG") | unzip: $EXTRACT | delete zip: $DELETE"
-
-# Official command: wget --content-disposition -x -nH -i download_config.txt
-#   -x -nH keeps the server-side directory layout (without the host name), which must match
-#   the relative paths encoded in the sensor_records.hdf5 files.
-FAILED=0
-wget -c --content-disposition -x -nH -i "$CONFIG" || FAILED=1
-
-if [ "$EXTRACT" -eq 1 ]; then
-  # Official command:
-  #   find . -name "*.zip" | while read filename; do unzip -o -d $(dirname "$filename") "$filename"; done;
-  find . -name "*.zip" | while read -r f; do
-    if unzip -o -q -d "$(dirname "$f")" "$f"; then
-      [ "$DELETE" -eq 1 ] && rm -f "$f"
-    else
-      echo "[fail] unzip $f" >&2
-    fi
-  done
+shift "$((OPTIND - 1))"
+[[ $# -eq 0 ]] || { echo "Unexpected argument: $1" >&2; exit 1; }
+[[ -n "$OUTPUT_ROOT" ]] || { echo "-o requires an output directory." >&2; exit 1; }
+[[ -f "$CONFIG" && -r "$CONFIG" ]] || {
+  echo "Cannot read config: $CONFIG. Use -c FILE to select a Mid-Air download list." >&2
+  exit 1
+}
+command -v wget >/dev/null || { echo "Missing required command: wget" >&2; exit 1; }
+if [[ "$EXTRACT" -eq 1 ]]; then
+  command -v unzip >/dev/null || { echo "Missing required command: unzip" >&2; exit 1; }
 fi
 
+FAILED=0
+COUNT=0
+while IFS= read -r url || [[ -n "$url" ]]; do
+  url=${url%$'\r'}
+  case "$url" in ''|'#'*) continue ;; esac
+  # The query authorizes the request. Only the URL path belongs in the local filename.
+  remote_path=${url%%[?#]*}
+  if [[ ! "$remote_path" =~ ^https?://[^/[:space:]]+/(.+)$ ]]; then
+    echo "Expected an HTTP(S) file URL in $CONFIG" >&2; exit 1
+  fi
+  relative=${BASH_REMATCH[1]}
+  case "/$relative/" in
+    *//*|*/../*|*/./*) echo "Invalid archive path in $CONFIG" >&2; exit 1 ;;
+  esac
+  archive="$OUTPUT_ROOT/$relative"
+  directory=${archive%/*}
+  mkdir -p -- "$directory"
+  COUNT=$((COUNT + 1))
+  printf '[download] %s\n' "$relative"
+  if ! wget -c -q --show-progress -O "$archive" -i - <<< "$url"; then
+    printf '[fail] %s (re-run to resume)\n' "$relative" >&2
+    FAILED=1
+    continue
+  fi
+
+  if [[ "$EXTRACT" -eq 1 && "$archive" == *.zip ]]; then
+    if unzip -o -q "$archive" -d "$directory"; then
+      if [[ "$DELETE" -eq 1 ]]; then rm -f -- "$archive"; fi
+    else
+      printf '[fail] unzip %s\n' "$relative" >&2
+      FAILED=1
+    fi
+  fi
+done < "$CONFIG"
+
+[[ "$COUNT" -gt 0 ]] || { echo "No archive URLs in $CONFIG" >&2; exit 1; }
 if [ "$FAILED" -ne 0 ]; then
-  echo "Some downloads failed; re-run this script to resume." >&2
+  echo "Some archives failed. Re-run the script to retry." >&2
   exit 1
 fi
-echo "All files downloaded."
+printf 'Downloaded %d archives to %s\n' "$COUNT" "$OUTPUT_ROOT"
