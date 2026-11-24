@@ -13,7 +13,7 @@ Read the license at https://nianticspatial.com/research/map-free/dataset.
 EOF
 }
 die() { printf 'Error: %s\n' "$*" >&2; exit 2; }
-target_dir="./data/Mapfree"
+target_dir="/Volumes/Expansion1/3DRDatasets/Mapfree"
 split="all"
 list_only=0
 while [[ $# -gt 0 ]]; do
