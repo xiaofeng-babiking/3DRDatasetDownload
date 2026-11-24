@@ -23,7 +23,7 @@ if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
   exit 0
 fi
 
-OUTPUT_ROOT=/Volumes/Expansion0/3DRDatasets/VirtualKITTI2
+OUTPUT_ROOT=/Volumes/Expansion1/3DRDatasets/VirtualKITTI2
 EXTRACT=0
 CHECK=0
 while getopts "o:xch" opt; do
