@@ -21,37 +21,6 @@ EOF
 }
 die() { printf 'Error: %s\n' "$*" >&2; exit 2; }
 
-download_list() {
-  local list="$1" dir="$2" line name i count=0 failed=0
-  local -a urls names
-  [[ -f "$list" && -r "$list" ]] || die "cannot read manifest: $list"
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    line=${line%$'\r'}
-    case "$line" in ''|'#'*) continue ;; esac
-    if (( count == 0 )) && [[ "$line" == *$'\t'* ]]; then
-      download_manifest "$list" "$dir"
-      return
-    fi
-    [[ "$line" =~ ^https?://[^/?#[:space:]]+/[^[:space:]]+$ ]] ||
-      die "expected one HTTP(S) file URL per line in $list"
-    name=${line%%[?#]*}
-    name=${name##*/}
-    case "$name" in ''|.|..) die "URL has no usable filename in $list" ;; esac
-    for ((i=0; i<count; i++)); do
-      [[ "${names[i]}" != "$name" ]] || die "duplicate filename $name; use a TSV with distinct output paths"
-    done
-    urls[count]="$line"
-    names[count]="$name"
-    count=$((count + 1))
-  done < "$list"
-  (( count > 0 )) || die "manifest contains no downloadable files: $list"
-  for ((i=0; i<count; i++)); do
-    printf '[%d/%d] ' "$((i + 1))" "$count"
-    download_file "${urls[i]}" "$dir/${names[i]}" || failed=1
-  done
-  return "$failed"
-}
-
 target_dir="/Volumes/Expansion1/3DRDatasets/MPSD"
 manifest=""
 url=""
@@ -82,5 +51,5 @@ source "$script_dir/../scripts/download_common.sh"
 if [[ -n "$url" ]]; then
   download_file "$url" "$target_dir/$filename"
 else
-  download_list "${manifest:-$script_dir/download_links.txt}" "$target_dir"
+  download_link_list "${manifest:-$script_dir/download_links.txt}" "$target_dir"
 fi

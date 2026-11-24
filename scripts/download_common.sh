@@ -84,3 +84,48 @@ download_manifest() {
   fi
   printf 'Downloaded/skipped %s files. Archives were not extracted.\n' "$count"
 }
+
+# Accept a list of file URLs, or a TSV with explicit names for the archives.
+download_link_list() {
+  local list="$1" dir="$2" line name i count=0 failed=0
+  local -a urls names
+  if [[ ! -f "$list" || ! -r "$list" ]]; then
+    printf 'Error: cannot read manifest: %s\n' "$list" >&2
+    return 2
+  fi
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line=${line%$'\r'}
+    case "$line" in ''|'#'*) continue ;; esac
+    if (( count == 0 )) && [[ "$line" == *$'\t'* ]]; then
+      download_manifest "$list" "$dir"
+      return
+    fi
+    if [[ ! "$line" =~ ^https?://[^/?#[:space:]]+/[^[:space:]]+$ ]]; then
+      printf 'Error: expected one HTTP(S) file URL per line in %s\n' "$list" >&2
+      return 2
+    fi
+    name=${line%%[?#]*}
+    name=${name##*/}
+    case "$name" in
+      ''|.|..) printf 'Error: URL has no usable filename in %s\n' "$list" >&2; return 2 ;;
+    esac
+    for ((i=0; i<count; i++)); do
+      if [[ "${names[i]}" == "$name" ]]; then
+        printf 'Error: duplicate filename %s; use a TSV with distinct output paths\n' "$name" >&2
+        return 2
+      fi
+    done
+    urls[count]="$line"
+    names[count]="$name"
+    count=$((count + 1))
+  done < "$list"
+  if (( count == 0 )); then
+    printf 'Error: manifest contains no downloadable files: %s\n' "$list" >&2
+    return 2
+  fi
+  for ((i=0; i<count; i++)); do
+    printf '[%d/%d] ' "$((i + 1))" "$count"
+    download_file "${urls[i]}" "$dir/${names[i]}" || failed=1
+  done
+  return "$failed"
+}
