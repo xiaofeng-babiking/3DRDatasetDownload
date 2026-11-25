@@ -6,7 +6,7 @@ usage() {
   cat <<'EOF'
 Usage: download_waymo.sh [--target_dir DIR] [--release NAME ...] [--prefix PATH]
                         [--list | --dry-run]
-Defaults: ./data/Waymo, release=all, entire buckets for the three releases below.
+Defaults: /Volumes/Expansion1/3DRDatasets/Waymo, release=all, all data for the three releases below.
 Releases:
   all            end-to-end + motion + perception-v2 (default)
   end-to-end     End-to-End Driving 1.0.0 (camera)
@@ -19,20 +19,22 @@ Repeat --release to select multiple releases, e.g. --release motion --release en
 --list          List the selected bucket prefixes; do not download.
 --dry-run       Preview synchronization; do not download.
 Files are saved under DIR/<release>/<bucket-relative-path>.
-Requires Google Cloud CLI. First obtain access at https://waymo.com/open/download/
+Whole-bucket sync uses gsutil from the Google Cloud CLI. First obtain access at https://waymo.com/open/download/
 and run gcloud auth login yourself. The wrapper never logs in or accepts terms.
-Only downloads; archives and compressed objects remain compressed.
+Dataset archives are not unpacked.
 
 Examples:
   bash Waymo/download_waymo.sh --list
   bash Waymo/download_waymo.sh --target_dir /path/to/Waymo --dry-run
   bash Waymo/download_waymo.sh --target_dir /path/to/Waymo
+  bash Waymo/download_waymo.sh --release motion
+  bash Waymo/download_waymo.sh --release perception-v2 --release end-to-end
   bash Waymo/download_waymo.sh --release motion --release end-to-end
   bash Waymo/download_waymo.sh --release perception-v2 --prefix training/camera_image
 EOF
 }
 die() { printf 'Error: %s\n' "$*" >&2; exit 2; }
-target_dir="./data/Waymo"
+target_dir="/Volumes/Expansion1/3DRDatasets/Waymo"
 releases=()
 prefix=""
 list_only=0
@@ -82,13 +84,21 @@ source "$script_dir/../scripts/download_common.sh"
 require_command gcloud
 
 rsync_flags=(--recursive)
-if [[ "$list_only" == 0 ]]; then
+bucket_sync=(gsutil -o 'GSUtil:use_gcloud_storage=False')
+preview_dir=""
+if [[ "$list_only" == 0 && -n "$prefix" ]]; then
   rsync_help=$(CLOUDSDK_PAGER=cat gcloud storage rsync --help) || die 'cannot read gcloud storage rsync help'
-  # CLI 576.0.0 introduced this flag and changed the default to decompress.
-  # Older versions already preserve gzip objects and reject the new flag.
   if [[ "$rsync_help" == *--do-not-decompress* ]]; then
     rsync_flags+=(--do-not-decompress)
   fi
+  [[ "$dry_run" == 0 ]] || rsync_flags+=(--dry-run)
+elif [[ "$list_only" == 0 ]]; then
+  # gcloud rsync requests storage.buckets.get at bucket roots. Native gsutil
+  # rsync enumerates objects, including files stored directly at the root.
+  require_command gsutil
+  if [[ "$OSTYPE" == darwin* ]]; then bucket_sync+=(-o 'GSUtil:parallel_process_count=1'); fi
+  bucket_sync+=(-m rsync -r -e)
+  [[ "$dry_run" == 0 ]] || bucket_sync+=(-n)
 fi
 
 failed_releases=()
@@ -107,7 +117,7 @@ for release in "${releases[@]}"; do
   fi
   printf '\n=== %s: %s -> %s\n' "$release" "$source_uri" "$destination"
   if [[ "$list_only" == 1 ]]; then
-    args=(storage ls "$source_uri/")
+    cmd=(gcloud storage ls "$source_uri/")
   else
     if [[ "$dry_run" == 0 ]]; then
       if ! mkdir -p -- "$destination"; then
@@ -115,16 +125,28 @@ for release in "${releases[@]}"; do
         continue
       fi
     fi
-    args=(storage rsync "$source_uri" "$destination" "${rsync_flags[@]}")
-    [[ "$dry_run" == 0 ]] || args+=(--dry-run)
+    if [[ -n "$prefix" ]]; then
+      cmd=(gcloud storage rsync "$source_uri" "$destination" "${rsync_flags[@]}")
+    else
+      if [[ "$dry_run" == 1 && ! -e "$destination" && ! -L "$destination" ]]; then
+        # gsutil needs an existing directory even in preview mode. Compare
+        # against an empty temp directory without creating the requested target.
+        if [[ -z "$preview_dir" ]]; then
+          preview_dir=$(mktemp -d "${TMPDIR:-/tmp}/waymo-preview.XXXXXXXX")
+          trap 'rmdir -- "$preview_dir"' EXIT
+        fi
+        printf 'Previewing new destination %s using empty directory %s\n' "$destination" "$preview_dir"
+        destination="$preview_dir"
+      fi
+      cmd=("${bucket_sync[@]}" "$source_uri/" "$destination")
+    fi
   fi
-  # Releases run in order; gcloud parallelizes file transfers within each release.
-  if gcloud "${args[@]}"; then
+  if "${cmd[@]}"; then
     printf '[done] %s\n' "$release"
   else
     download_status=$?
     [[ "$download_status" != 130 && "$download_status" != 143 ]] || exit "$download_status"
-    printf '[fail] %s (gcloud exit %s)\n' "$release" "$download_status" >&2
+    printf '[fail] %s (%s exit %s)\n' "$release" "${cmd[0]}" "$download_status" >&2
     failed_releases+=("$release")
   fi
 done
